@@ -1,52 +1,142 @@
 #!/usr/bin/env python
-import sys, pygame
+import sys, pygame, random
 from square import Square
 assert sys.version_info >= (3,4), 'This script requires at least Python 3.4' 
 
-screen_size = (600,600)
+screen_size = (800,600)
 dimensions = (rows,columns) = (4,4)
 FPS = 60
 black = (0,0,0)
-#colors taken from https://yeun.github.io/open-color/
-colors = [(134,142,150),(250,82,82),(230,73,128),(190,75,219),(121,80,242),(76,110,245),(34,138,230),(21,170,191),(18,184,134),(64,192,87),(130,201,30),(250,176,5),(253,126,20),(233,236,239),(255,236,153),(163,218,255)]	
+red = (200, 0, 0)
+green = (0, 200, 0)
+
+threeLets = [" dad", " old", " you", " can", " day", " day", " man", " boy", " mom", " act", " bar", " car", " dew", " eat", " gym", " ink", " key", " ram", " urn", " vet", " yap"]
+fourLets = ["void", "open", "acid", "aged", "army", "ball", "loon", "bank", "bath", "boom", "bush", "clam", "cook", "crew", "dawn", "dead", "dial", "disk", "drug",
+            "dual", "edge", "exit", "fact", "felt", "file", "fund", "golf", "gulf", "harm", "hire", "holy", "inch", " iron", "jack", "jury","king", "kind", "lead",
+            "less", "link", "mass", "menu", "mere", "navy", "nick", "note", "only", "okay", "palm", "pair", "plug", "quit", "rail", "rare", "risk", "rule", "sign",
+            "snow", "suit", "text", "tour", "twin", "user", "vice", "vote", "view", "wage", "ward", "wing", "yard", "zero"]
+
 
 def calculate_xy(pos,puzzle):
 	''' calculates which square is the target '''
-	w = width / columns
-	h = height / rows
+	w = 600 / columns
+	h = 600 / rows
 	to_return = (int(pos[0]//w),int(pos[1]//h))
 	return to_return
 
+def record_win(words, lines):
+        record = 0
+        for line in lines:
+                for word in words:
+                        if line == word:
+                                record += 1
+        if record == 4:
+                return True
+        else:
+                return False
+        
+
 def main():
-	pygame.init()
-	screen = pygame.display.set_mode(screen_size)
-	font = pygame.font.SysFont("arial",64)
-	clock = pygame.time.Clock()
+        turns = 0
+        pygame.init()
+        words = random.sample(threeLets, 1) + random.sample(fourLets, 3)
+        letters = []
+        for phrase in words:
+                for character in phrase:
+                        letters.append(character)
+                
+        char = 0
+        win = 0
+        screen = pygame.display.set_mode(screen_size)
+        font = pygame.font.SysFont("arial",48)
+        clock = pygame.time.Clock()
 
-	puzzle = []
-	(w,h) = (screen_size[0]/columns,screen_size[1]/rows)
-	for i in range(rows):
-		for j in range(columns):
-			position = j*rows + i
-			color = colors[position]
-			puzzle.append(Square(i,j,str(position+1),w,h,color,font))
-	
-	while True:
-		clock.tick(FPS)
+        random.shuffle(letters)
+        
+        puzzle = []
+        (w,h) = (600/columns,600/rows)
+        for i in range(rows):
+                for j in range(columns):
+                        position = j*rows + i
+                        color = red
+                        puzzle.append(Square(i,j,str(letters[char]),w,h,color,font))
+                        char += 1
+        
+        while True:
+                clock.tick(FPS)
 
-		screen.fill(black)
-		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				pygame.quit()
-				sys.exit(0)
-			if event.type == pygame.MOUSEBUTTONUP:
-				pos = pygame.mouse.get_pos()
+                screen.fill(black)
+                for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                                pygame.quit()
+                                sys.exit(0)
+                        if event.type == pygame.MOUSEBUTTONUP:
+                                if win == 0:
+                                        pos = calculate_xy(pygame.mouse.get_pos(), puzzle)
+                                        for p in puzzle:
+                                                if p.position == pos:
+                                                        for piece in puzzle:
+                                                                if p.check_proximity(piece.position) and piece.label == " ":
+                                                                        turns += 1
+                                                                        saved_pos = p.position
+                                                                        p.position = piece.position
+                                                                        piece.position = saved_pos
+                                                                        p.color = red
+                for num in range(columns):
+                        for p in puzzle:
+                                for word in words:
+                                        if p.label == word[num] and (p.position == (num, 0) or p.position == (num, 1) or p.position == (num, 2) or p.position == (num,3)):
+                                                p.color = green
+                                                
+                
+                for p in puzzle:
+                        p.draw_square(pygame.draw,screen)		
 
-		for p in puzzle:
-			p.draw_square(pygame.draw,screen)		
+                text = ("Turn: " + str(turns))
+                f = font.render(text,True,(255,255,255))
+                (fwidth,fheight) = font.size(text)
+                screen.blit(f, (625,100))
 
-		
-		pygame.display.flip()
+                line1 = [0,0,0,0]
+                line2 = [0,0,0,0]
+                line3 = [0,0,0,0]
+                line4 = [0,0,0,0]
+
+
+                for p in puzzle:
+                        for num1 in range(columns):
+                                        if p.position == (num1,0):
+                                                line1[num1] = p.label
+                                        if p.position == (num1,1):
+                                                line2[num1] = p.label
+                                        if p.position == (num1,2):
+                                                line3[num1] = p.label
+                                        if p.position == (num1,3):
+                                                line4[num1] = p.label
+
+
+                line1 = "".join(line1)
+                line2 = "".join(line2)
+                line3 = "".join(line3)
+                line4 = "".join(line4)
+                
+                lines = [line1, line2, line3, line4]
+
+                
+                text = ("Turn: " + str(turns))
+                
+                if record_win(words, lines):
+                        text2 = "YOU WIN!!!"
+                        w = font.render(text2, True, (255,255,255))    
+                        screen.blit(w, (625, 150))
+                        win += 1
+                f = font.render(text,True,(255,255,255))
+                
+                (fwidth,fheight) = font.size(text)
+                screen.blit(f, (625,100))
+                
+                
+                pygame.display.flip()
 
 if __name__ == '__main__':
 	main()
